@@ -4,4 +4,8 @@
 public class crawlConfig {
     private int maxnumPages;
 
+    private String crawlStoragePath;
+
+
+
 }

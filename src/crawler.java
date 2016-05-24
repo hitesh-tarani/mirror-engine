@@ -10,13 +10,16 @@ public class crawler implements Runnable{
     int nextFetchDelay; // wait for these ms to fetch next ur
     @Override
     public void run() {
-        while(true)
+        while (true)
         {
             List<url> urls = new ArrayList<>(50);
             if (urls.isEmpty())
             {
                 System.out.print("Assigned empty urls");
+                //return ;
             }
+
+
         }
     }
 
