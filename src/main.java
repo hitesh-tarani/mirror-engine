@@ -92,14 +92,11 @@ public class main
                         //if(link.attr("href").contains("mit.edu"))
                         processPage(link.attr("abs:href"));
                     }
-                }
-                catch (Exception e)
-                {
-                    System.out.println("Error in this url: " + URL);
-                }
             }
-
-
+            catch (Exception e)
+            {
+                System.out.println("Error in this url: " + url);
+            }
         }
     }
 }
