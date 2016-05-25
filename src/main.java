@@ -7,6 +7,7 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+
 public class main
 {
     //public static ArrayList<String> crawledUrls = new ArrayList<>();
@@ -84,15 +85,18 @@ public class main
                     System.out.println(url);
                 }
 
-                //get all links and recursively call the processPage method
-                Elements questions = doc.select("a[href]");
-                for(Element link: questions)
-                {
-                    //if(link.attr("href").contains("mit.edu"))
-                    processPage(link.attr("abs:href"));
+                    //get all links and recursively call the processPage method
+                    Elements questions = doc.select("a[href]");
+                    for(Element link: questions)
+                    {
+                        //if(link.attr("href").contains("mit.edu"))
+                        processPage(link.attr("abs:href"));
+                    }
                 }
-            } catch (java.net.MalformedURLException e) {
-                System.out.println("Error in this url: " + url);
+                catch (Exception e)
+                {
+                    System.out.println("Error in this url: " + URL);
+                }
             }
 
 
