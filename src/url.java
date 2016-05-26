@@ -1,18 +1,17 @@
 
 import java.net.URL;
-import java.net.URLEncoder;
 
 /**
  * Created by Hitesh on 14-May-16.
  */
-public class Url {
+public class url {
     private URL sourceUrl;
 
     private String contentType;
 
     private byte[] content;
 
-    public Url(URL sourceUrl, String contentType, byte[] content)
+    public url(URL sourceUrl, String contentType, byte[] content)
     {
         this.sourceUrl = sourceUrl;
         this.contentType = contentType;
@@ -23,7 +22,7 @@ public class Url {
         return sourceUrl;
     }
 
-    private String convertToFileName()
+    /*private String convertToFileName()
     {
         String url = sourceUrl.toExternalForm();
         int httpIdx = url.indexOf("http://");
@@ -44,5 +43,5 @@ public class Url {
         url = textReplace("?", URLEncoder.encode("?"), url);
         url = textReplace("&", URLEncoder.encode("&"), url);
         return crawlConfig.getCrawlStorageDir().getPath() + "/" + url;
-    }
+    }*/
 }

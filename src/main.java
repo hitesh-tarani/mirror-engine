@@ -2,11 +2,83 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
+
+class processPage implements Runnable
+{
+    public static String url;
+    public static Set<String> crawledUrls;
+
+    public static void processPage(String url1, Set<String> crawledUrl)
+    {
+        url=url1;
+        crawledUrls=crawledUrl;
+    }
+
+    @Override
+    public void run()
+    {
+        String domain,subDomain;
+        if(!crawledUrls.contains(url))
+        {
+            String protoc = main.getProtoc(url);
+            if (!protoc.equals("http") && !protoc.equals("https"))
+            {
+                System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
+                return ;
+            }
+
+            domain = main.getDomain(url);
+
+            if (!domain.equals(main.baseCrawlDomain))
+            {
+                System.out.println("url not the same domain as in baseUrl: "+ url);
+                return ;
+            }
+            subDomain = "";
+
+            /*
+            String[] parts = domain.split("\\.");
+
+            for (int i = 0; i < (parts.length - limit); i++) {
+                if (!subDomain.isEmpty()) {
+                    subDomain += ".";
+                }
+                subDomain += parts[i];
+            }
+            */
+
+            crawledUrls.add(url);
+            Document doc;
+            //get useful information
+            try {
+                doc = Jsoup.connect(url).get();
+
+                //if(doc.text().contains("research"))
+                {
+                    System.out.println(url);
+                }
+
+                //get all links and recursively call the processPage method
+                Elements questions = doc.select("a[href]");
+                for(Element link: questions)
+                {
+                    //if(link.attr("href").contains("mit.edu"))
+                    /** add to task queue*/
+                    //processPage(link.attr("abs:href"));
+                }
+            }
+            catch (Exception e)
+            {
+                System.out.println("Error in this url: " + url);
+            }
+        }
+    }
+}
 
 public class main
 {
