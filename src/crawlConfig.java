@@ -11,4 +11,8 @@ public class crawlConfig {
     public File getCrawlStorageDir() {
         return crawlStorageDir;
     }
+
+    public void setCrawlStorageDir(File crawlStorageDir) {
+        this.crawlStorageDir = crawlStorageDir;
+    }
 }
