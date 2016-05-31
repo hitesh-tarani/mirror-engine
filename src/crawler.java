@@ -4,10 +4,11 @@ import java.util.List;
 /**
  * Created by Hitesh on 14-May-16.
  */
-public class crawler implements Runnable{
-    int numCrawlers = 5; //number of crawlers
+public class crawler extends Thread
+{
+    String name;
+    int nextFetchDelay; // wait for these ms to fetch next url
 
-    int nextFetchDelay; // wait for these ms to fetch next ur
     @Override
     public void run() {
         while (true)

@@ -67,7 +67,7 @@ class ThreadPool
         if(!ThreadPoolTest.crawledUrls.contains(task))
             if(!this.taskQueue.contains(task))
             {
-                System.out.println("task has been added.");
+                //System.out.println("task has been added.");
                 this.taskQueue.put(task);
             }
     }
@@ -127,7 +127,6 @@ class ThreadPoolsThread extends Thread
                 url task = taskQueue.take();
                 System.out.println(Thread.currentThread().getName() + " has taken task.");
 
-                //TODO: 5/31/2016  : do the task
                 try
                 {
                     ThreadPoolTest.processPage(task,threadPool);
@@ -167,10 +166,7 @@ class ThreadPoolsThread extends Thread
     }
 }
 
-
 /**
- * Task class which implements Runnable.
- */
 class Task implements Runnable
 {
     @Override
@@ -187,6 +183,7 @@ class Task implements Runnable
         }
     }
 };
+*/
 
 /**
  * Test ThreadPool.
@@ -242,7 +239,7 @@ public class ThreadPoolTest
             //get useful information
             try
             {
-                doc = Jsoup.connect(url.getSourceUrl().toString()).get();
+                doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(10000).get();
 
                 url.setContent(doc.html().getBytes());
 

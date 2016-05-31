@@ -8,13 +8,21 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by Hitesh on 24-May-16.
  */
 public class crawlConfig {
-    private int maxnumPages;
+    public int maxnumPages;
 
-    private File crawlStorageDir;
+    public int numCrawlers = 5; //number of crawlers
 
-    private BlockingQueue<url> urlsToCrawl = new LinkedBlockingQueue<>();
+    public int numberOfCrawlersRunning;
 
-    private Set<url> crawledUrls = new HashSet<>(50);
+    public url baseCrawlUrl;
+
+    public boolean shutDownInitiated = false;
+
+    public File crawlStorageDir;
+
+    public BlockingQueue<url> urlsToCrawl = new LinkedBlockingQueue<>();
+
+    public Set<url> crawledUrls = new HashSet<>(50);
 
     public File getCrawlStorageDir() {
         return crawlStorageDir;
@@ -24,5 +32,53 @@ public class crawlConfig {
         this.crawlStorageDir = crawlStorageDir;
     }
 
+    public synchronized void execute(url URL) throws Exception
+    {
+        if(shutDownInitiated)
+            throw new Exception("ThreadPool has been shutDown, no further tasks can be added");
+        else
+        {
+            if(!crawledUrls.contains(URL) && !urlsToCrawl.contains(URL))
+            {
+                //System.out.println("task has been added.");
+                urlsToCrawl.add(URL);
+            }
+        }
+    }
+
+    public synchronized void changeNumberOfRunningCrawlers(int i)
+    {
+        if(i>0)
+            numberOfCrawlersRunning++;
+        else
+            numberOfCrawlersRunning--;
+        if(numberOfCrawlersRunning==0)
+            shutDownInitiated=true;
+    }
+
+    public crawlConfig(url CrawlUrl)
+    {
+        baseCrawlUrl = CrawlUrl;
+        for (int i = 0; i < numCrawlers; i++)
+        {
+            crawler Crawler = new crawler();
+            Crawler.setName("Crawler-:"+(i+1));
+            Crawler.start();
+        }
+    }
+
+    public crawlConfig(int n, url CrawlUrl)
+    {
+        baseCrawlUrl = CrawlUrl;
+        numCrawlers = n;
+        for (int i = 0; i < numCrawlers; i++)
+        {
+            crawler Crawler = new crawler();
+            Crawler.setName("Crawler-:"+(i+1));
+            Crawler.start();
+        }
+    }
 
 }
+
+
