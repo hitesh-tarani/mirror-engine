@@ -56,20 +56,19 @@ public class crawlConfig {
             shutDownInitiated=true;
     }
 
-    public crawlConfig(url CrawlUrl)
+    public crawlConfig()
     {
-        baseCrawlUrl = CrawlUrl;
         for (int i = 0; i < numCrawlers; i++)
         {
             crawler Crawler = new crawler();
             Crawler.setName("Crawler-:"+(i+1));
             Crawler.start();
         }
+        urlsToCrawl.add(baseCrawlUrl);
     }
 
-    public crawlConfig(int n, url CrawlUrl)
+    public crawlConfig(int n)
     {
-        baseCrawlUrl = CrawlUrl;
         numCrawlers = n;
         for (int i = 0; i < numCrawlers; i++)
         {
@@ -77,6 +76,7 @@ public class crawlConfig {
             Crawler.setName("Crawler-:"+(i+1));
             Crawler.start();
         }
+        urlsToCrawl.add(baseCrawlUrl);
     }
 
 }
