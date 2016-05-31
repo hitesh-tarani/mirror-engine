@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 class url {
     private URL sourceUrl;
 
-    //private String contentType;
+    private String contentType;
 
     public byte[] content;
 
@@ -83,6 +83,14 @@ class url {
         domainEndIdx = (domainEndIdx > domainStartIdx) ? domainEndIdx : url.length();
         domain = url.substring(domainStartIdx, domainEndIdx);
         return domain;
+    }
+
+    public void setContentType(String contentType) {
+        this.contentType = contentType;
+    }
+
+    public String getContentType() {
+        return contentType;
     }
 
     public URL getSourceUrl() {

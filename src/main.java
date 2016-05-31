@@ -2,9 +2,13 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import sun.misc.IOUtils;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.ArrayDeque;
 import java.util.HashSet;
 import java.util.Queue;
@@ -25,7 +29,7 @@ public class main
 
     public static url baseCrawlUrl = new url("http://insite.iitmandi.ac.in/insite_wp/",config, 0); //"http://www.mit.edu"; //http://www.insite.iitmandi.ac.in";
 
-    public static String storagePath = "C:\\mirror_engine\\";
+    public static String storagePath = "mirror_engine/";
 
     public static String baseCrawlDomain = getDomain(baseCrawlUrl);
 
@@ -102,8 +106,8 @@ public class main
 
                 if (!domain.equals(baseCrawlDomain))
                 {
-                    System.out.println("url not the same domain as in baseUrl: "+ url);
-                    return ;
+                    System.out.println("url not the same domain as in baseUrl: "+ url.getSourceUrl().toExternalForm());
+                    continue;
                 }
 //              subDomain = "";
 
@@ -140,6 +144,34 @@ public class main
 //                        e.printStackTrace();
 //                    }
 //                }
+                HttpURLConnection httpConn = (HttpURLConnection) url.getSourceUrl().openConnection();
+
+                int responseCode = httpConn.getResponseCode();
+
+
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    continue;
+                }
+                url.setContentType(httpConn.getContentType());
+
+                if (!url.getContentType().startsWith("text/html"))
+                {
+//                    byte[] content = new byte[4096];
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+                    InputStream is = httpConn.getInputStream();
+                    byte[] byteChunk = new byte[4096]; // Or whatever size you want to read in at a time.
+                    int n;
+
+                    while ( (n = is.read(byteChunk)) > 0 ) {
+                        baos.write(byteChunk, 0, n);
+                    }
+                    url.content = baos.toByteArray();
+//                    System.out.println();
+                    url.writeToFile();
+                    continue;
+                }
+
                 Document doc;
                 //get useful information
                 try {
