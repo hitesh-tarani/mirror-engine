@@ -1,4 +1,10 @@
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
 import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -11,6 +17,8 @@ public class crawlConfig {
     public int maxnumPages;
 
     public int numCrawlers = 5; //number of crawlers
+
+    String baseCrawlDomain;
 
     public int numberOfCrawlersRunning;
 
@@ -30,6 +38,16 @@ public class crawlConfig {
 
     public void setCrawlStorageDir(File crawlStorageDir) {
         this.crawlStorageDir = crawlStorageDir;
+    }
+
+    public synchronized int executed(url URL)
+    {
+        if(!crawledUrls.contains(URL))
+        {
+            crawledUrls.add(URL);
+            return 1;
+        }
+        return 0;
     }
 
     public synchronized void execute(url URL) throws Exception
@@ -52,7 +70,7 @@ public class crawlConfig {
             numberOfCrawlersRunning++;
         else
             numberOfCrawlersRunning--;
-        if(numberOfCrawlersRunning==0)
+        if(numberOfCrawlersRunning == 0)
             shutDownInitiated=true;
     }
 
@@ -62,9 +80,9 @@ public class crawlConfig {
         {
             crawler Crawler = new crawler();
             Crawler.setName("Crawler-:"+(i+1));
+            Crawler.myParent = this;
             Crawler.start();
         }
-        urlsToCrawl.add(baseCrawlUrl);
     }
 
     public crawlConfig(int n)
@@ -74,9 +92,74 @@ public class crawlConfig {
         {
             crawler Crawler = new crawler();
             Crawler.setName("Crawler-:"+(i+1));
+            Crawler.myParent = this;
             Crawler.start();
         }
-        urlsToCrawl.add(baseCrawlUrl);
+    }
+
+    public boolean processPage(url Url) throws IOException
+    {
+        String domain;
+        url url = Url;
+        if(!crawledUrls.contains(url))
+        {
+            String protoc = url.getSourceUrl().getProtocol();
+            if (!protoc.equals("http") && !protoc.equals("https"))
+            {
+                System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
+            }
+
+            domain = main.getDomain(url);
+
+            if (!domain.equals(baseCrawlDomain))
+            {
+                System.out.println("url not the same domain as in baseUrl: "+ url);
+            }
+
+            int isAdded = executed(url);
+
+            if(isAdded == 0)
+            {
+                return false;
+            }
+
+            Document doc;
+            //get useful information
+            try
+            {
+                doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(10000).get();
+
+                url.setContent(doc.html().getBytes());
+
+                //if(doc.text().contains("research"))
+                {
+                    System.out.println(url.getSourceUrl().toString());
+                }
+
+                url.writeToFile();
+
+                //get all links and recursively call the processPage method
+                Elements questions = doc.select("a[href]");
+                Elements images = doc.select("img[src]");
+                Element body = doc.body();
+                for(Element link: questions)
+                {
+                    //if(link.attr("href").contains("mit.edu"))
+                    //System.out.println(link.attr("abs:href"));
+                    execute(new url(link.attr("abs:href"),this));
+                }
+                for(Element link: images)
+                {
+                    //if(link.attr("href").contains("mit.edu"))
+                    execute(new url(link.attr("abs:src"),this));
+                }
+            }
+            catch (Exception e)
+            {
+                System.out.println("Error in this url: " + url.getSourceUrl().toString() + " " +e.getMessage());
+            }
+        }
+        return true;
     }
 
 }

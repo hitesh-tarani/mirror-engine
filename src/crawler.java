@@ -7,20 +7,21 @@ import java.util.List;
 public class crawler extends Thread
 {
     String name;
+    crawlConfig myParent;
+    List<url> urls = new ArrayList<>(10);
     int nextFetchDelay; // wait for these ms to fetch next url
 
     @Override
     public void run() {
         while (true)
         {
-            List<url> urls = new ArrayList<>(50);
+            urls.clear();
+            myParent.urlsToCrawl.drainTo(urls, 10);
             if (urls.isEmpty())
             {
                 System.out.print("Assigned empty urls");
                 //return ;
             }
-
-
         }
     }
 
