@@ -13,36 +13,37 @@ import java.util.Set;
 public class main
 {
     //public static ArrayList<String> crawledUrls = new ArrayList<>();
-    public static int downloadLimit = 0;
+//    public static int downloadLimit = 0;
 
-    public static int downloadSpeed=1;
+//    public static int downloadSpeed=1;
 
     public static Set<url> crawledUrls = new HashSet<>();
 
     private static Queue<url> urlsToCrawl = new ArrayDeque<>();
 
-    private static crawlConfig config = new crawlConfig();
+    private static crawlConfig config = new crawlConfig(0);
 
-    public static url baseCrawlUrl = new url("http://insite.iitmandi.ac.in/insite_wp/",config); //"http://www.mit.edu"; //http://www.insite.iitmandi.ac.in";
+    public static url baseCrawlUrl = new url("http://insite.iitmandi.ac.in/insite_wp/",config, 0); //"http://www.mit.edu"; //http://www.insite.iitmandi.ac.in";
 
-    public static String storagePath = "C:\\Users\\Ayush\\Dropbox\\Hitesh_Ayush\\sem6\\Parallel_programming\\mini_proj";
+    public static String storagePath = "C:\\mirror_engine\\";
 
     public static String baseCrawlDomain = getDomain(baseCrawlUrl);
 
     public static void main(String[] args) throws IOException
     {
-        config.setCrawlStorageDir(new File(storagePath));
+        config.baseCrawlUrl = baseCrawlUrl;
+        config.setCrawlStorageDir(new File(storagePath + baseCrawlDomain));
         urlsToCrawl.add(baseCrawlUrl);
         System.setProperty("http.proxyHost","10.8.0.1");
         System.setProperty("http.proxyPort","8080");
-        Thread speedLimiter = new Thread(() ->
-        {
-            if(downloadLimit >= 0)
-            {
-                downloadLimit = downloadSpeed*10;
-            }
-        });
-        speedLimiter.start();
+//        Thread speedLimiter = new Thread(() ->
+//        {
+//            if(downloadLimit >= 0)
+//            {
+//                downloadLimit = downloadSpeed*10;
+//            }
+//        });
+//        speedLimiter.start();
 //        System.out.println("File of "+ baseCrawlUrl.getSourceUrl() + " is " + baseCrawlUrl.getSourceUrl().getFile() );
         processPage();
     }
@@ -119,59 +120,75 @@ public class main
 
                 crawledUrls.add(url);
 
-                int sizeOfUrl;
-                try
-                {
-                    sizeOfUrl = url.content.length;
-                }
-                catch (Exception e)
-                {
-                    sizeOfUrl=0;
-                }
-                if(downloadLimit < sizeOfUrl)
-                {
-                    try
-                    {
-                        Thread.currentThread().wait(((sizeOfUrl-downloadLimit)*10)/downloadSpeed);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        e.printStackTrace();
-                    }
-                }
+//                int sizeOfUrl;
+//                try
+//                {
+//                    sizeOfUrl = url.content.length;
+//                }
+//                catch (Exception e)
+//                {
+//                    sizeOfUrl=0;
+//                }
+//                if(downloadLimit < sizeOfUrl)
+//                {
+//                    try
+//                    {
+//                        Thread.currentThread().wait(((sizeOfUrl-downloadLimit)*10)/downloadSpeed);
+//                    }
+//                    catch (InterruptedException e)
+//                    {
+//                        e.printStackTrace();
+//                    }
+//                }
                 Document doc;
                 //get useful information
                 try {
-                    doc = Jsoup.connect(url.getSourceUrl().toString()).get();
+                    doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(10000).get();
 
-                    url.setContent(doc.html().getBytes());
+
 
                     //if(doc.text().contains("research"))
                     {
                         System.out.println(url.getSourceUrl().toString());
                     }
 
-                    url.writeToFile();
 
                     //get all links and recursively call the processPage method
-                    Elements questions = doc.select("a[href]");
+                    Elements links = doc.select("a[href]");
                     Elements images = doc.select("img[src]");
-                    Element body = doc.body();
-                    for(Element link: questions)
+                    Elements css = doc.select("link[href]");
+
+                    for(Element link: links)
                     {
                         //if(link.attr("href").contains("mit.edu"))
                         //System.out.println(link.attr("abs:href"));
                         urlsToCrawl.add(new url(link.attr("abs:href"),config));
+                        link.attr("href",url.modifyUrl(link.attr("href"),url));
+//                        System.out.println("link : " + link.attr("href"));
                     }
+
                     for(Element link: images)
                     {
                         //if(link.attr("href").contains("mit.edu"))
+//                        System.out.println(link.attr("abs:src"));
                         urlsToCrawl.add(new url(link.attr("abs:src"),config));
+                        link.attr("src",url.modifyUrl(link.attr("src"),url));
                     }
+
+                    for(Element link: css) {
+                        //if(link.attr("href").contains("mit.edu"))
+//                        System.out.println(link.attr("abs:src"));
+                        urlsToCrawl.add(new url(link.attr("abs:href"), config));
+                        link.attr("href", url.modifyUrl(link.attr("href"), url));
+                    }
+
+                    url.setContent(doc.html().getBytes());
+                    url.writeToFile();
                 }
                 catch (Exception e)
                 {
-                    System.out.println("Error in this url: " + url.getSourceUrl().toString() + " " +e.getMessage());
+                    System.out.println("Error in this url: " + url.getSourceUrl().toString());
+                    e.printStackTrace();
                 }
             }
         }

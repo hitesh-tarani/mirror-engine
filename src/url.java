@@ -16,11 +16,26 @@ class url {
 
     private crawlConfig config;
 
+    private int fileDepth;
+
     public url(URL sourceUrl, byte[] content, crawlConfig config)
     {
         this.sourceUrl = sourceUrl;
         this.content = content;
         this.config = config;
+
+        String url = sourceUrl.toExternalForm();
+        int fileStartIdx = 0;
+        if(url.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
+            fileStartIdx = config.baseCrawlUrl.getSourceUrl().toString().length();
+        String restUrl = url.substring(fileStartIdx);
+
+        this.fileDepth = count(restUrl,"/");
+    }
+
+    private int count(String s,String match)
+    {
+        return s.length() - s.replace(match,"").length();
     }
 
     public url(String sourceUrl, crawlConfig config)
@@ -28,10 +43,46 @@ class url {
         try {
             this.sourceUrl = new URL(sourceUrl);
             this.config = config;
+//
+//        int domainStartIdx = sourceUrl.indexOf("//") + 2;
+//        int domainEndIdx = sourceUrl.indexOf('/', domainStartIdx);
+//        domainEndIdx = (domainEndIdx > domainStartIdx) ? domainEndIdx : sourceUrl.length();
+//        String restUrl = sourceUrl.substring(domainEndIdx);
+            int fileStartIdx = 0;
+            if(sourceUrl.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
+                fileStartIdx = config.baseCrawlUrl.getSourceUrl().toString().length();
+            String restUrl = sourceUrl.substring(fileStartIdx);
+
+            this.fileDepth = count(restUrl,"/");
         } catch (MalformedURLException e) {
             //e.printStackTrace();
             System.out.println("Error in link href: " + sourceUrl);
         }
+    }
+
+    public url(String sourceUrl, crawlConfig config, int fileDepth)
+    {
+        try {
+            this.sourceUrl = new URL(sourceUrl);
+            this.config = config;
+            this.fileDepth = fileDepth;
+        } catch (MalformedURLException e) {
+            //e.printStackTrace();
+            System.out.println("Error in link href: " + sourceUrl);
+        }
+    }
+
+    static String getDomain (url Url)
+    {
+        String domain;
+
+        String url = Url.getSourceUrl().toString();
+
+        int domainStartIdx = url.indexOf("//") + 2;
+        int domainEndIdx = url.indexOf('/', domainStartIdx);
+        domainEndIdx = (domainEndIdx > domainStartIdx) ? domainEndIdx : url.length();
+        domain = url.substring(domainStartIdx, domainEndIdx);
+        return domain;
     }
 
     public URL getSourceUrl() {
@@ -117,5 +168,20 @@ class url {
             startPos = textPos + replace.length();
         }
         return input;
+    }
+
+    String modifyUrl(String url, url parenturl)
+    {
+        url = url.replace("www.","");
+        if (url.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
+        {
+            String addStr = new String(new char[parenturl.fileDepth]).replace("\0", "../");
+
+            addStr = addStr.concat(url.substring(config.baseCrawlUrl.getSourceUrl().toString().length()));
+
+//            System.out.println("here: " + addStr);
+            return addStr;
+        }
+        return url;
     }
 }
