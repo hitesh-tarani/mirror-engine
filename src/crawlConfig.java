@@ -3,8 +3,11 @@ import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.HttpURLConnection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -20,7 +23,7 @@ public class crawlConfig {
 
     String baseCrawlDomain;
 
-    public int numberOfCrawlersRunning = 0;
+    public int numberOfCrawlersRunning = 5;
 
     public url baseCrawlUrl;
 
@@ -50,16 +53,23 @@ public class crawlConfig {
         return 0;
     }
 
-    public synchronized void execute(url URL) throws Exception
+    public synchronized void execute(url URL)
     {
         if(shutDownInitiated)
-            throw new Exception("ThreadPool has been shutDown, no further tasks can be added");
+            System.out.println("ThreadPool has been shutDown, no further tasks can be added");
         else
         {
-            if(!crawledUrls.contains(URL.getSourceUrl().toString()))
+            if(URL!=null && URL.getSourceUrl()!=null && !crawledUrls.contains(URL.getSourceUrl().toString()))
             {
                 //System.out.println("task has been added.");
-                urlsToCrawl.put(URL);
+                try
+                {
+                    urlsToCrawl.put(URL);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -70,7 +80,7 @@ public class crawlConfig {
             numberOfCrawlersRunning++;
         else
             numberOfCrawlersRunning--;
-        if(numberOfCrawlersRunning == numCrawlers)
+        if(numberOfCrawlersRunning == 0)
             shutDownInitiated=true;
     }
 
@@ -88,7 +98,7 @@ public class crawlConfig {
     public crawlConfig(int n)
     {
         numCrawlers = n;
-        numberOfCrawlersRunning = 0;
+        numberOfCrawlersRunning = n;
         for (int i = 0; i < numCrawlers; i++)
         {
             crawler Crawler = new crawler();
@@ -98,17 +108,19 @@ public class crawlConfig {
         }
     }
 
-    public boolean processPage(url Url) throws IOException
+    public void processPage(url Url) throws IOException
     {
         String domain;
         url url = Url;
+        if(url==null||url.getSourceUrl()==null)
+            return ;
         if(!crawledUrls.contains(url))
         {
             String protoc = url.getSourceUrl().getProtocol();
             if (!protoc.equals("http") && !protoc.equals("https"))
             {
                 System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
-                return false;
+                return ;
             }
 
             domain = main.getDomain(url);
@@ -116,14 +128,44 @@ public class crawlConfig {
             if (!domain.equals(baseCrawlDomain))
             {
                 System.out.println("url not the same domain as in baseUrl: "+ url.getSourceUrl().toString());
-                return false;
+                return ;
             }
 
             int isAdded = executed(url);
 
             if(isAdded == 0)
             {
-                return false;
+                return ;
+            }
+
+            HttpURLConnection httpConn = (HttpURLConnection) url.getSourceUrl().openConnection();
+
+            int responseCode = httpConn.getResponseCode();
+
+
+            if (responseCode != HttpURLConnection.HTTP_OK)
+            {
+                return ;
+            }
+            url.setContentType(httpConn.getContentType());
+
+            if (!url.getContentType().contains("text/html"))
+            {
+//                  byte[] content = new byte[4096];
+                ByteArrayOutputStream baos = new ByteArrayOutputStream();
+
+                InputStream is = httpConn.getInputStream();
+                byte[] byteChunk = new byte[4096]; // Or whatever size you want to read in at a time.
+                int n;
+
+                while ( (n = is.read(byteChunk)) > 0 )
+                {
+                    baos.write(byteChunk, 0, n);
+                }
+                url.content = baos.toByteArray();
+//                    System.out.println();
+                url.writeToFile();
+                return ;
             }
 
             Document doc;
@@ -132,37 +174,54 @@ public class crawlConfig {
             {
                 doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(10000).get();
 
-                url.setContent(doc.html().getBytes());
+
 
                 //if(doc.text().contains("research"))
                 {
                     System.out.println(url.getSourceUrl().toString());
                 }
 
-                url.writeToFile();
 
                 //get all links and recursively call the processPage method
-                Elements questions = doc.select("a[href]");
+                Elements links = doc.select("a[href]");
                 Elements images = doc.select("img[src]");
-                Element body = doc.body();
-                for(Element link: questions)
+                Elements css = doc.select("link[href]");
+
+                for(Element link: links)
                 {
                     //if(link.attr("href").contains("mit.edu"))
                     //System.out.println(link.attr("abs:href"));
-                    execute(new url(link.attr("abs:href"),this));
+                    execute(new url(link.attr("abs:href"), this));
+                    link.attr("href",url.modifyUrl(link.attr("href"),url));
+//                        System.out.println("link : " + link.attr("href"));
                 }
+
                 for(Element link: images)
                 {
                     //if(link.attr("href").contains("mit.edu"))
-                    execute(new url(link.attr("abs:src"),this));
+//                        System.out.println(link.attr("abs:src"));
+                    execute(new url(link.attr("abs:src"), this));
+                    link.attr("src",url.modifyUrl(link.attr("src"),url));
                 }
+
+                for(Element link: css) {
+                    //if(link.attr("href").contains("mit.edu"))
+//                        System.out.println(link.attr("abs:src"));
+                    execute(new url(link.attr("abs:href"), this));
+                    link.attr("href", url.modifyUrl(link.attr("href"), url));
+                }
+
+                url.setContent(doc.html().getBytes());
+                url.writeToFile();
             }
             catch (Exception e)
             {
-                System.out.println("Error in this url: " + url.getSourceUrl().toString() + " " +e.getMessage());
+                System.out.println("Error in this url: " + url.getSourceUrl().toString());
+                e.printStackTrace();
             }
+            return ;
         }
-        return true;
+        return ;
     }
 
 }

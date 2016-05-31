@@ -2,7 +2,6 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
-import sun.misc.IOUtils;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -154,9 +153,9 @@ public class main
                 }
                 url.setContentType(httpConn.getContentType());
 
-                if (!url.getContentType().startsWith("text/html"))
+                if (!url.getContentType().contains("text/html"))
                 {
-//                    byte[] content = new byte[4096];
+//                  byte[] content = new byte[4096];
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
 
                     InputStream is = httpConn.getInputStream();

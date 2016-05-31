@@ -5,7 +5,7 @@ import java.io.File;
  */
 public class Multi_Thread_Main
 {
-    public static String storagePath = "C:\\Users\\Ayush\\Dropbox\\Hitesh_Ayush\\sem6\\Parallel_programming\\mini_proj";
+    public static String storagePath = "/home/ayush/Desktop/insite/";
 
     public static url baseCrawlUrl;
 
@@ -14,18 +14,13 @@ public class Multi_Thread_Main
         System.setProperty("http.proxyHost","10.8.1.2");
         System.setProperty("http.proxyPort","8080");
 
-        crawlConfig mirror_engine = new crawlConfig(3); //create 3 threads in ThreadPool
+        crawlConfig mirror_engine = new crawlConfig(4);
 
-        baseCrawlUrl =  new url("http://insite.iitmandi.ac.in/insite_wp/", mirror_engine);
+        baseCrawlUrl =  new url("http://insite.iitmandi.ac.in/insite_wp/", mirror_engine, 0);
         mirror_engine.baseCrawlUrl = baseCrawlUrl;
         mirror_engine.urlsToCrawl.add(baseCrawlUrl);
+        mirror_engine.baseCrawlDomain = url.getDomain(baseCrawlUrl);
         mirror_engine.setCrawlStorageDir(new File(storagePath));
 
-
-        //Runnable task=new Task();
-        //threadPool.execute(task);
-        //threadPool.execute(task);
-
-        //threadPool.shutdown();
     }
 }
