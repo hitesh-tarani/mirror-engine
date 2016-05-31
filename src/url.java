@@ -29,7 +29,8 @@ class url {
             this.sourceUrl = new URL(sourceUrl);
             this.config = config;
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            //e.printStackTrace();
+            System.out.println("Error in link href: " + sourceUrl);
         }
     }
 

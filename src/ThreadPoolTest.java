@@ -1,7 +1,6 @@
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-
 /**
  * ThreadPool is a class which creates a thread pool that reuses a fixed
  * number of threads to execute tasks.
@@ -18,7 +17,6 @@ import java.util.concurrent.LinkedBlockingQueue;
  */
 class ThreadPool
 {
-
     private BlockingQueue<Runnable> taskQueue;
 
     /*
@@ -90,8 +88,7 @@ class ThreadPoolsThread extends Thread
     private BlockingQueue<Runnable> taskQueue;
     private ThreadPool threadPool;
 
-    public ThreadPoolsThread(BlockingQueue<Runnable> queue,
-                             ThreadPool threadPool)
+    public ThreadPoolsThread(BlockingQueue<Runnable> queue, ThreadPool threadPool)
     {
         taskQueue = queue;
         this.threadPool=threadPool;
@@ -109,8 +106,7 @@ class ThreadPoolsThread extends Thread
                    */
             while (true)
             {
-                System.out.println(Thread.currentThread().getName()
-                        +" is READY to execute task.");
+                System.out.println(Thread.currentThread().getName() + " is READY to execute task.");
                         /*ThreadPool's thread will take() task from sharedQueue
                          * only if tasks are available else
                          * waits for tasks to become available.
@@ -146,7 +142,7 @@ class ThreadPoolsThread extends Thread
         }
         catch (InterruptedException e)
         {
-            System.out.println(Thread.currentThread().getName()+" has been STOPPED.");
+            System.out.println(Thread.currentThread().getName()+ " has been STOPPED.");
         }
     }
 }
