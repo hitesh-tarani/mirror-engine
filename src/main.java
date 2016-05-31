@@ -13,6 +13,10 @@ import java.util.Set;
 public class main
 {
     //public static ArrayList<String> crawledUrls = new ArrayList<>();
+    public static int downloadLimit = 0;
+
+    public static int downloadSpeed=1;
+
     public static Set<url> crawledUrls = new HashSet<>();
 
     private static Queue<url> urlsToCrawl = new ArrayDeque<>();
@@ -31,6 +35,14 @@ public class main
         urlsToCrawl.add(baseCrawlUrl);
         System.setProperty("http.proxyHost","10.8.0.1");
         System.setProperty("http.proxyPort","8080");
+        Thread speedLimiter = new Thread(() ->
+        {
+            if(downloadLimit >= 0)
+            {
+                downloadLimit = downloadSpeed*10;
+            }
+        });
+        speedLimiter.start();
 //        System.out.println("File of "+ baseCrawlUrl.getSourceUrl() + " is " + baseCrawlUrl.getSourceUrl().getFile() );
         processPage();
     }
@@ -106,6 +118,27 @@ public class main
                 */
 
                 crawledUrls.add(url);
+
+                int sizeOfUrl;
+                try
+                {
+                    sizeOfUrl = url.content.length;
+                }
+                catch (Exception e)
+                {
+                    sizeOfUrl=0;
+                }
+                if(downloadLimit < sizeOfUrl)
+                {
+                    try
+                    {
+                        Thread.currentThread().wait(((sizeOfUrl-downloadLimit)*10)/downloadSpeed);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        e.printStackTrace();
+                    }
+                }
                 Document doc;
                 //get useful information
                 try {

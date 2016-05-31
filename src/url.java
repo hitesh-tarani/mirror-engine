@@ -12,7 +12,7 @@ class url {
 
     //private String contentType;
 
-    private byte[] content;
+    public byte[] content;
 
     private crawlConfig config;
 
