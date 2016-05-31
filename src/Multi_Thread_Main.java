@@ -14,7 +14,7 @@ public class Multi_Thread_Main
         System.setProperty("http.proxyHost","10.8.1.2");
         System.setProperty("http.proxyPort","8080");
 
-        crawlConfig mirror_engine = new crawlConfig(0); //create 3 threads in ThreadPool
+        crawlConfig mirror_engine = new crawlConfig(3); //create 3 threads in ThreadPool
 
         baseCrawlUrl =  new url("http://insite.iitmandi.ac.in/insite_wp/", mirror_engine);
         mirror_engine.baseCrawlUrl = baseCrawlUrl;

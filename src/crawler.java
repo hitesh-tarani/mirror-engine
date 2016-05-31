@@ -1,3 +1,4 @@
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,6 +9,7 @@ public class crawler extends Thread
 {
     String name;
     crawlConfig myParent;
+    url URL;
     List<url> urls = new ArrayList<>(10);
     int nextFetchDelay; // wait for these ms to fetch next url
 
@@ -15,12 +17,24 @@ public class crawler extends Thread
     public void run() {
         while (true)
         {
-            urls.clear();
-            myParent.urlsToCrawl.drainTo(urls, 10);
-            if (urls.isEmpty())
+            try
             {
-                System.out.print("Assigned empty urls");
-                //return ;
+                //myParent.changeNumberOfRunningCrawlers(1);
+                URL = myParent.urlsToCrawl.take();
+                //myParent.changeNumberOfRunningCrawlers(-1);
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
+
+            try
+            {
+                myParent.processPage(URL);
+            }
+            catch (IOException e)
+            {
+                e.printStackTrace();
             }
         }
     }

@@ -20,7 +20,7 @@ public class crawlConfig {
 
     String baseCrawlDomain;
 
-    public int numberOfCrawlersRunning;
+    public int numberOfCrawlersRunning = 0;
 
     public url baseCrawlUrl;
 
@@ -30,7 +30,7 @@ public class crawlConfig {
 
     public BlockingQueue<url> urlsToCrawl = new LinkedBlockingQueue<>();
 
-    public Set<url> crawledUrls = new HashSet<>(50);
+    public Set<String> crawledUrls = new HashSet<>(50);
 
     public File getCrawlStorageDir() {
         return crawlStorageDir;
@@ -42,9 +42,9 @@ public class crawlConfig {
 
     public synchronized int executed(url URL)
     {
-        if(!crawledUrls.contains(URL))
+        if(!crawledUrls.contains(URL.getSourceUrl().toString()))
         {
-            crawledUrls.add(URL);
+            crawledUrls.add(URL.getSourceUrl().toString());
             return 1;
         }
         return 0;
@@ -56,10 +56,10 @@ public class crawlConfig {
             throw new Exception("ThreadPool has been shutDown, no further tasks can be added");
         else
         {
-            if(!crawledUrls.contains(URL) && !urlsToCrawl.contains(URL))
+            if(!crawledUrls.contains(URL.getSourceUrl().toString()))
             {
                 //System.out.println("task has been added.");
-                urlsToCrawl.add(URL);
+                urlsToCrawl.put(URL);
             }
         }
     }
@@ -70,7 +70,7 @@ public class crawlConfig {
             numberOfCrawlersRunning++;
         else
             numberOfCrawlersRunning--;
-        if(numberOfCrawlersRunning == 0)
+        if(numberOfCrawlersRunning == numCrawlers)
             shutDownInitiated=true;
     }
 
@@ -88,6 +88,7 @@ public class crawlConfig {
     public crawlConfig(int n)
     {
         numCrawlers = n;
+        numberOfCrawlersRunning = 0;
         for (int i = 0; i < numCrawlers; i++)
         {
             crawler Crawler = new crawler();
@@ -107,13 +108,15 @@ public class crawlConfig {
             if (!protoc.equals("http") && !protoc.equals("https"))
             {
                 System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
+                return false;
             }
 
             domain = main.getDomain(url);
 
             if (!domain.equals(baseCrawlDomain))
             {
-                System.out.println("url not the same domain as in baseUrl: "+ url);
+                System.out.println("url not the same domain as in baseUrl: "+ url.getSourceUrl().toString());
+                return false;
             }
 
             int isAdded = executed(url);
