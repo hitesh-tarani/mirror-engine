@@ -7,7 +7,7 @@ import java.io.IOException;
  */
 public class Multi_Thread_Main
 {
-    public static String storagePath = "/home/ayush/Desktop/insite1/";
+    public static String storagePath = "/home/mirror_engine/";
 
     public static url baseCrawlUrl;
 
@@ -18,7 +18,7 @@ public class Multi_Thread_Main
 
         crawlConfig mirror_engine = new crawlConfig(3, 10000);
 
-        baseCrawlUrl =  new url("http://insite.iitmandi.ac.in/insite_wp/", mirror_engine, 0);
+        baseCrawlUrl =  new url("http://insite.iitmandi.ac.in/moodle/", mirror_engine, 0);
         mirror_engine.baseCrawlUrl = baseCrawlUrl;
         mirror_engine.baseCrawlDomain = url.getDomain(baseCrawlUrl);
         mirror_engine.setCrawlStorageDir(new File(storagePath + mirror_engine.baseCrawlDomain));

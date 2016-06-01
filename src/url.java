@@ -6,6 +6,9 @@ import java.net.URL;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
+/**
+ * Created by Hitesh on 14-May-16.
+ */
 class url {
     private URL sourceUrl;
 
@@ -69,7 +72,12 @@ class url {
                         String pathWithoutExt = path.substring(0,dotIdx);
                         String ext = path.substring(dotIdx);
                         if (this.sourceUrl.getQuery() != null)
-                            this.filePath = pathWithoutExt + URLEncoder.encode("?", StandardCharsets.UTF_8.toString())+ this.sourceUrl.getQuery() + ext;
+                        {
+                            String query = "?" + this.sourceUrl.getQuery();
+                            query = textReplace("?","qu",query);
+                            query = textReplace("=","eq",query);
+                            this.filePath = pathWithoutExt + query + ext;
+                        }
                         else
                             this.filePath = pathWithoutExt + ext;
 //                        System.out.println(pathWithoutExt+ " : "+ ext);
@@ -98,9 +106,23 @@ class url {
                         int dotIdx = this.sourceUrl.getPath().lastIndexOf(".");
                         if(dotIdx > 0)
                         {
-                            String pathWithoutExt = this.sourceUrl.getPath().substring(dotIdx);
-                            String ext = this.sourceUrl.toString().substring(dotIdx, sourceUrl.length());
-                            this.filePath = pathWithoutExt + this.sourceUrl.getQuery() + ext;
+                            String path = this.sourceUrl.getPath();
+                            String pathWithoutExt = path.substring(0,dotIdx);
+                            String ext = path.substring(dotIdx);
+                            String query = "?" + this.sourceUrl.getQuery();
+                            query = textReplace("?","qu",query);
+                            query = textReplace("=","eq",query);
+                            this.filePath = pathWithoutExt + query + ext;
+                        }
+                        else
+                        {
+                            String path = this.sourceUrl.getPath();
+                            if (path.endsWith("/"))
+                                path = path.substring(0,path.length()-1);
+                            String query = "?" + this.sourceUrl.getQuery();
+                            query = textReplace("?","qu",query);
+                            query = textReplace("=","eq",query);
+                            this.filePath = path + query + "/index.html";
                         }
                     }
 
@@ -119,7 +141,7 @@ class url {
 
         } catch (IOException e) {
             //e.printStackTrace();
-            System.out.println("Error in link href: " + sourceUrl);
+//            System.out.println("Error in link href: " + sourceUrl);
         }
     }
 
@@ -137,7 +159,12 @@ class url {
                 String pathWithoutExt = path.substring(0,dotIdx);
                 String ext = path.substring(dotIdx);
                 if (this.sourceUrl.getQuery() != null)
-                    this.filePath = pathWithoutExt + URLEncoder.encode("?", StandardCharsets.UTF_8.toString())+ this.sourceUrl.getQuery() + ext;
+                {
+                    String query = "?" + this.sourceUrl.getQuery();
+                    query = textReplace("?","qu",query);
+                    query = textReplace("=","eq",query);
+                    this.filePath = pathWithoutExt + query + ext;
+                }
                 else
                     this.filePath = pathWithoutExt + ext;
 //                        System.out.println(pathWithoutExt+ " : "+ ext);
@@ -154,7 +181,7 @@ class url {
 
         } catch (IOException e) {
             //e.printStackTrace();
-            System.out.println("Error in link href: " + sourceUrl);
+//            System.out.println("Error in link href: " + sourceUrl);
         }
     }
 
@@ -196,7 +223,7 @@ class url {
     public void writeToFile()
     {
         String filename = config.getCrawlStorageDir().getPath()+ this.filePath;
-//        System.out.println(filename);
+        System.out.println(filename);
         writeToFile(filename);
     }
 
