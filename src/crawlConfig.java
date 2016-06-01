@@ -1,5 +1,6 @@
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.ByteArrayOutputStream;
@@ -7,6 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
+import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
@@ -16,6 +18,12 @@ import java.util.concurrent.LinkedBlockingQueue;
  * Created by Hitesh on 24-May-16.
  */
 public class crawlConfig {
+    public Integer totalDownloadedBytes = 0;
+
+    public int downloadLimit;
+
+    public int downloadSpeed = 500;
+
     public int maxnumPages;
 
     public int numCrawlers = 5; //number of crawlers
@@ -40,6 +48,11 @@ public class crawlConfig {
 
     public void setCrawlStorageDir(File crawlStorageDir) {
         this.crawlStorageDir = crawlStorageDir;
+    }
+
+    public synchronized void incrementTotalDownloadedBytes(int n)
+    {
+        totalDownloadedBytes += n;
     }
 
     public synchronized int executed(url URL)
@@ -92,6 +105,21 @@ public class crawlConfig {
             Crawler.myParent = this;
             Crawler.start();
         }
+        Thread speedLimiter=new Thread(() -> {
+            while(true)
+            {
+                downloadLimit += downloadSpeed*10;
+                try
+                {
+                    Thread.sleep(10);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+        speedLimiter.start();
     }
 
     public crawlConfig(int n)
@@ -105,6 +133,50 @@ public class crawlConfig {
             Crawler.myParent = this;
             Crawler.start();
         }
+        Thread speedLimiter=new Thread(() -> {
+            while(true)
+            {
+                downloadLimit += downloadSpeed*10;
+                try
+                {
+                    Thread.sleep(10);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+        speedLimiter.start();
+    }
+
+    public crawlConfig(int n, int speed)
+    {
+        downloadSpeed = speed;
+        numCrawlers = n;
+        numberOfCrawlersRunning = n;
+        for (int i = 0; i < numCrawlers; i++)
+        {
+            crawler Crawler = new crawler();
+            Crawler.setName("Crawler-:"+(i+1));
+            Crawler.myParent = this;
+            Crawler.start();
+        }
+        Thread speedLimiter=new Thread(() -> {
+            while(true)
+            {
+                downloadLimit += downloadSpeed*10;
+                try
+                {
+                    Thread.sleep(10);
+                }
+                catch (InterruptedException e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+        speedLimiter.start();
     }
 
     public void processPage(url Url) throws IOException
@@ -159,7 +231,18 @@ public class crawlConfig {
 
                 while ( (n = is.read(byteChunk)) > 0 )
                 {
+                    incrementTotalDownloadedBytes(n);
+                    downloadLimit -= n;
                     baos.write(byteChunk, 0, n);
+                    while(downloadLimit<0)
+                    {
+                        System.out.println("Download Limit exceeded so sleeping");
+                        try {
+                            Thread.sleep(100);
+                        } catch (InterruptedException e) {
+                            e.printStackTrace();
+                        }
+                    }
                 }
                 url.content = baos.toByteArray();
 //                    System.out.println();
@@ -167,13 +250,34 @@ public class crawlConfig {
                 return ;
             }
 
+            InputStream is = httpConn.getInputStream();
+            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+            byte[] byteChunk = new byte[4096]; // Or whatever size you want to read in at a time.
+            int n;
+
+            while ( (n = is.read(byteChunk)) > 0 )
+            {
+                incrementTotalDownloadedBytes(n);
+                downloadLimit -= n;
+                baos.write(byteChunk, 0, n);
+                while(downloadLimit<0)
+                {
+                    System.out.println("Download Limit exceeded so sleeping");
+                    try {
+                        Thread.sleep(100);
+                    } catch (InterruptedException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+            String content = baos.toString();
+
             Document doc;
             //get useful information
             try
             {
-                doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(10000).get();
-
-
+                doc = Jsoup.parse(content);
+//                doc = Jsoup.connect(url.getSourceUrl().toString()).timeout(100000).get();
 
                 //if(doc.text().contains("research"))
                 {
@@ -181,35 +285,31 @@ public class crawlConfig {
                 }
 
 
-                //get all links and recursively call the processPage method
-                Elements links = doc.select("a[href]");
-                Elements images = doc.select("img[src]");
-                Elements css = doc.select("link[href]");
-/*
-                for(Element link: links)
+                //get all links
+                ArrayList<Pair> allLinks = new ArrayList<>(5);
+                allLinks.add(new Pair("a[href]","href"));
+                allLinks.add(new Pair("img[src]","src"));
+                allLinks.add(new Pair("link[href]","href"));
+                allLinks.add(new Pair("script[src]","src"));
+//                    allLinks.add(new Pair("meta","url"));
+
+                for (Pair linkPair: allLinks)
                 {
-                    //if(link.attr("href").contains("mit.edu"))
-                    //System.out.println(link.attr("abs:href"));
-                    execute(new url(link.attr("abs:href"), this));
-                    link.attr("href",url.modifyUrl(link.attr("href"),url));
-//                        System.out.println("link : " + link.attr("href"));
+
+                    String attr = linkPair.attr;
+                    Elements links = doc.select(linkPair.tag);
+
+                    for (Element link: links)
+                    {
+//                            System.out.println("link : " + links.html());
+                        url newUrl = new url(link.attr("abs:" + attr),this,linkPair.tag);
+                        urlsToCrawl.add(newUrl);
+//                            System.out.print("link : " + link.attr(attr));
+                        link.attr(attr,url.modifyUrl(link.attr(attr),newUrl,url));
+
+                    }
                 }
 
-                for(Element link: images)
-                {
-                    //if(link.attr("href").contains("mit.edu"))
-//                        System.out.println(link.attr("abs:src"));
-                    execute(new url(link.attr("abs:src"), this));
-                    link.attr("src",url.modifyUrl(link.attr("src"),url));
-                }
-
-                for(Element link: css) {
-                    //if(link.attr("href").contains("mit.edu"))
-//                        System.out.println(link.attr("abs:src"));
-                    execute(new url(link.attr("abs:href"), this));
-                    link.attr("href", url.modifyUrl(link.attr("href"), url));
-                }
-*/
                 url.setContent(doc.html().getBytes());
                 url.writeToFile();
             }

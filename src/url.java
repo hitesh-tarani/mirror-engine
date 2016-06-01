@@ -69,7 +69,7 @@ class url {
                         String pathWithoutExt = path.substring(0,dotIdx);
                         String ext = path.substring(dotIdx);
                         if (this.sourceUrl.getQuery() != null)
-                            this.filePath = pathWithoutExt + "?" +this.sourceUrl.getQuery() + ext;
+                            this.filePath = pathWithoutExt + URLEncoder.encode("?", StandardCharsets.UTF_8.toString())+ this.sourceUrl.getQuery() + ext;
                         else
                             this.filePath = pathWithoutExt + ext;
 //                        System.out.println(pathWithoutExt+ " : "+ ext);
@@ -130,24 +130,27 @@ class url {
             this.config = config;
             this.fileDepth = fileDepth;
 
-            int dotIdx = this.sourceUrl.getPath().lastIndexOf(".");
+            String path = this.sourceUrl.getPath();
+            int dotIdx = path.lastIndexOf(".");
             if(dotIdx > 0)
             {
-                String pathWithoutExt = this.sourceUrl.getPath().substring(dotIdx);
-                String ext = this.sourceUrl.toString().substring(dotIdx,sourceUrl.length());
+                String pathWithoutExt = path.substring(0,dotIdx);
+                String ext = path.substring(dotIdx);
                 if (this.sourceUrl.getQuery() != null)
-                    this.filePath = pathWithoutExt + this.sourceUrl.getQuery() + ext;
+                    this.filePath = pathWithoutExt + URLEncoder.encode("?", StandardCharsets.UTF_8.toString())+ this.sourceUrl.getQuery() + ext;
                 else
                     this.filePath = pathWithoutExt + ext;
+//                        System.out.println(pathWithoutExt+ " : "+ ext);
             }
             else
             {
-                if (this.sourceUrl.getPath().endsWith("/"))
+                if (path.endsWith("/"))
                     this.filePath = this.sourceUrl.getPath() + "index.html";
                 else
                     this.filePath = this.sourceUrl.getPath() + "/index.html";
             }
             this.fileDepth = count(this.filePath,"/");
+
 
         } catch (IOException e) {
             //e.printStackTrace();
