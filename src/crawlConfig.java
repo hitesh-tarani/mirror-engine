@@ -1,6 +1,5 @@
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
 import java.io.ByteArrayOutputStream;
@@ -186,7 +185,7 @@ public class crawlConfig {
                 Elements links = doc.select("a[href]");
                 Elements images = doc.select("img[src]");
                 Elements css = doc.select("link[href]");
-
+/*
                 for(Element link: links)
                 {
                     //if(link.attr("href").contains("mit.edu"))
@@ -210,7 +209,7 @@ public class crawlConfig {
                     execute(new url(link.attr("abs:href"), this));
                     link.attr("href", url.modifyUrl(link.attr("href"), url));
                 }
-
+*/
                 url.setContent(doc.html().getBytes());
                 url.writeToFile();
             }

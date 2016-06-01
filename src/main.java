@@ -8,10 +8,7 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.HttpURLConnection;
-import java.util.ArrayDeque;
-import java.util.HashSet;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 public class main
 {
@@ -36,6 +33,7 @@ public class main
     {
         config.baseCrawlUrl = baseCrawlUrl;
         config.setCrawlStorageDir(new File(storagePath + baseCrawlDomain));
+        config.baseCrawlDomain = url.getDomain(baseCrawlUrl);
         urlsToCrawl.add(baseCrawlUrl);
         System.setProperty("http.proxyHost","10.8.0.1");
         System.setProperty("http.proxyPort","8080");
@@ -47,7 +45,7 @@ public class main
 //            }
 //        });
 //        speedLimiter.start();
-//        System.out.println("File of "+ baseCrawlUrl.getSourceUrl() + " is " + baseCrawlUrl.getSourceUrl().getFile() );
+//        System.out.println("File of "+ baseCrawlUrl.getSourceUrl() + " is " + baseCrawlUrl.getSourceUrl().getQuery() );
         processPage();
     }
 
@@ -55,23 +53,6 @@ public class main
     {
         return url.substring(0,url.indexOf(":"));
     }
-
-    public static String getDomain (String url)
-    {
-        String domain;
-
-        int domainStartIdx = url.indexOf("//") + 2;
-        int domainEndIdx = url.indexOf('/', domainStartIdx);
-        domainEndIdx = (domainEndIdx > domainStartIdx) ? domainEndIdx : url.length();
-        domain = url.substring(domainStartIdx, domainEndIdx);
-        return domain;
-    }
-
-    /*public static String getProtoc (url url)
-    {
-        String Url = url.toString();
-        return Url.substring(0,Url.indexOf(":"));
-    }*/
 
     public static String getDomain (url Url)
     {
@@ -95,11 +76,11 @@ public class main
             if(!crawledUrls.contains(url))
             {
                 String protoc = url.getSourceUrl().getProtocol();
-                if (!protoc.equals("http") && !protoc.equals("https"))
-                {
-                    System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
-                    return ;
-                }
+//                if (!protoc.equals("http") && !protoc.equals("https"))
+//                {
+//                    System.out.println("protocol is "+ protoc + "url not in HTTP and HTTPS: "+ url);
+//                    return ;
+//                }
 
                 domain = getDomain(url);
 
@@ -153,7 +134,7 @@ public class main
                 }
                 url.setContentType(httpConn.getContentType());
 
-                if (!url.getContentType().contains("text/html"))
+                if (!url.getContentType().startsWith("text/html"))
                 {
 //                  byte[] content = new byte[4096];
                     ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -166,7 +147,6 @@ public class main
                         baos.write(byteChunk, 0, n);
                     }
                     url.content = baos.toByteArray();
-//                    System.out.println();
                     url.writeToFile();
                     continue;
                 }
@@ -184,36 +164,41 @@ public class main
                     }
 
 
-                    //get all links and recursively call the processPage method
-                    Elements links = doc.select("a[href]");
-                    Elements images = doc.select("img[src]");
-                    Elements css = doc.select("link[href]");
+                    //get all links
+                    ArrayList<Pair> allLinks = new ArrayList<>(5);
+                    allLinks.add(new Pair("a[href]","href"));
+                    allLinks.add(new Pair("img[src]","src"));
+                    allLinks.add(new Pair("link[href]","href"));
+                    allLinks.add(new Pair("script[src]","src"));
+//                    allLinks.add(new Pair("meta","url"));
 
-                    for(Element link: links)
+                    for (Pair linkPair: allLinks)
                     {
-                        //if(link.attr("href").contains("mit.edu"))
-                        //System.out.println(link.attr("abs:href"));
-                        urlsToCrawl.add(new url(link.attr("abs:href"),config));
-                        link.attr("href",url.modifyUrl(link.attr("href"),url));
-//                        System.out.println("link : " + link.attr("href"));
+
+                        String attr = linkPair.attr;
+                        Elements links = doc.select(linkPair.tag);
+//                        System.out.println(links.size());
+
+                        for (Element link: links)
+                        {
+//                            System.out.println("link : " + links.html());
+                            url newUrl = new url(link.attr("abs:" + attr),config,linkPair.tag);
+                            urlsToCrawl.add(newUrl);
+//                            System.out.print("link : " + link.attr(attr));
+                            link.attr(attr,url.modifyUrl(link.attr(attr),newUrl,url));
+
+                        }
+//                        System.out.println("reached");
                     }
 
-                    for(Element link: images)
-                    {
-                        //if(link.attr("href").contains("mit.edu"))
-//                        System.out.println(link.attr("abs:src"));
-                        urlsToCrawl.add(new url(link.attr("abs:src"),config));
-                        link.attr("src",url.modifyUrl(link.attr("src"),url));
-                    }
-
-                    for(Element link: css) {
-                        //if(link.attr("href").contains("mit.edu"))
-//                        System.out.println(link.attr("abs:src"));
-                        urlsToCrawl.add(new url(link.attr("abs:href"), config));
-                        link.attr("href", url.modifyUrl(link.attr("href"), url));
-                    }
+//                    Elements links = doc.select("a[href]");
+//                    Elements images = doc.select("img[src]");
+//                    Elements css = doc.select("link[href]");
+//                    Elements js = doc.select("script[src]");
+//                    Elements meta = doc.select("");
 
                     url.setContent(doc.html().getBytes());
+//                    System.out.println("here!!!!!!!!!!!!");
                     url.writeToFile();
                 }
                 catch (Exception e)

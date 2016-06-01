@@ -1,9 +1,8 @@
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.net.MalformedURLException;
 import java.net.URL;
-import java.io.File;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 
@@ -17,6 +16,8 @@ class url {
     private crawlConfig config;
 
     private int fileDepth;
+
+    private String filePath;
 
     public url(URL sourceUrl, byte[] content, crawlConfig config)
     {
@@ -38,10 +39,11 @@ class url {
         return s.length() - s.replace(match,"").length();
     }
 
-    public url(String sourceUrl, crawlConfig config)
+    public url(String sourceUrl, crawlConfig config, String linkTag)
     {
         try {
             this.sourceUrl = new URL(sourceUrl);
+//            this.contentType = URLConnection.guessContentTypeFromName(this.getSourceUrl().toExternalForm());
             this.config = config;
 //
 //        int domainStartIdx = sourceUrl.indexOf("//") + 2;
@@ -49,12 +51,73 @@ class url {
 //        domainEndIdx = (domainEndIdx > domainStartIdx) ? domainEndIdx : sourceUrl.length();
 //        String restUrl = sourceUrl.substring(domainEndIdx);
             int fileStartIdx = 0;
-            if(sourceUrl.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
-                fileStartIdx = config.baseCrawlUrl.getSourceUrl().toString().length();
-            String restUrl = sourceUrl.substring(fileStartIdx);
+//            if(sourceUrl.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
 
-            this.fileDepth = count(restUrl,"/");
-        } catch (MalformedURLException e) {
+            String urlStart = this.sourceUrl.getProtocol() + "://" + config.baseCrawlDomain + '/';
+            String restUrl;
+            if (sourceUrl.startsWith(urlStart))
+            {
+//                fileStartIdx = urlStart.length();
+//                restUrl = sourceUrl.substring(fileStartIdx);
+//                System.out.println(this.contentType);
+                if (!linkTag.startsWith("a"))
+                {
+                    String path = this.sourceUrl.getPath();
+                    int dotIdx = path.lastIndexOf(".");
+                    if(dotIdx > 0)
+                    {
+                        String pathWithoutExt = path.substring(0,dotIdx);
+                        String ext = path.substring(dotIdx);
+                        if (this.sourceUrl.getQuery() != null)
+                            this.filePath = pathWithoutExt + "?" +this.sourceUrl.getQuery() + ext;
+                        else
+                            this.filePath = pathWithoutExt + ext;
+//                        System.out.println(pathWithoutExt+ " : "+ ext);
+                    }
+                    else
+                    {
+                        if (path.endsWith("/"))
+                            this.filePath = this.sourceUrl.getPath() + "index.html";
+                        else
+                            this.filePath = this.sourceUrl.getPath() + "/index.html";
+                    }
+                    this.fileDepth = count(this.filePath,"/");
+//                    System.out.println(sourceUrl+" : "+ this.filePath);
+                }
+                else
+                {
+                    if (this.sourceUrl.getQuery() == null)
+                    {
+                        if (this.sourceUrl.getPath().endsWith("/"))
+                            this.filePath = this.sourceUrl.getPath() + "index.html";
+                        else
+                            this.filePath = this.sourceUrl.getPath() + "/index.html";
+                    }
+                    else
+                    {
+                        int dotIdx = this.sourceUrl.getPath().lastIndexOf(".");
+                        if(dotIdx > 0)
+                        {
+                            String pathWithoutExt = this.sourceUrl.getPath().substring(dotIdx);
+                            String ext = this.sourceUrl.toString().substring(dotIdx, sourceUrl.length());
+                            this.filePath = pathWithoutExt + this.sourceUrl.getQuery() + ext;
+                        }
+                    }
+
+//                    System.out.println(sourceUrl + " : " + this.filePath);
+                    this.fileDepth = count(this.filePath,"/");
+                }
+
+//                System.out.println(sourceUrl + " : " + this.filePath);
+            }
+            else
+            {
+                restUrl = sourceUrl.substring(fileStartIdx);
+                this.filePath = restUrl;
+                this.fileDepth = count(restUrl,"/");
+            }
+
+        } catch (IOException e) {
             //e.printStackTrace();
             System.out.println("Error in link href: " + sourceUrl);
         }
@@ -66,7 +129,27 @@ class url {
             this.sourceUrl = new URL(sourceUrl);
             this.config = config;
             this.fileDepth = fileDepth;
-        } catch (MalformedURLException e) {
+
+            int dotIdx = this.sourceUrl.getPath().lastIndexOf(".");
+            if(dotIdx > 0)
+            {
+                String pathWithoutExt = this.sourceUrl.getPath().substring(dotIdx);
+                String ext = this.sourceUrl.toString().substring(dotIdx,sourceUrl.length());
+                if (this.sourceUrl.getQuery() != null)
+                    this.filePath = pathWithoutExt + this.sourceUrl.getQuery() + ext;
+                else
+                    this.filePath = pathWithoutExt + ext;
+            }
+            else
+            {
+                if (this.sourceUrl.getPath().endsWith("/"))
+                    this.filePath = this.sourceUrl.getPath() + "index.html";
+                else
+                    this.filePath = this.sourceUrl.getPath() + "/index.html";
+            }
+            this.fileDepth = count(this.filePath,"/");
+
+        } catch (IOException e) {
             //e.printStackTrace();
             System.out.println("Error in link href: " + sourceUrl);
         }
@@ -109,11 +192,8 @@ class url {
 
     public void writeToFile()
     {
-        String filename = config.getCrawlStorageDir().getPath()+ sourceUrl.getFile();
-        if(!filename.contains("/"))
-            filename += "/index.html";
-        else if(filename.endsWith("/"))
-            filename += "index.html";
+        String filename = config.getCrawlStorageDir().getPath()+ this.filePath;
+//        System.out.println(filename);
         writeToFile(filename);
     }
 
@@ -178,16 +258,24 @@ class url {
         return input;
     }
 
-    String modifyUrl(String url, url parenturl)
+    String modifyUrl(String url, url Url, url parenturl)
     {
         url = url.replace("www.","");
-        if (url.startsWith(config.baseCrawlUrl.getSourceUrl().toString()))
+//        System.out.println("in modify: " + url);
+
+        URL sourceurl;
+        String urlStart;
+        if ((sourceurl = Url.sourceUrl) != null)
+            urlStart =  sourceurl.getProtocol() + "://" + config.baseCrawlDomain + '/';
+        else
+            urlStart =  "http://" + config.baseCrawlDomain + '/';
+
+        if (url.startsWith(urlStart))
         {
-            String addStr = new String(new char[parenturl.fileDepth]).replace("\0", "../");
-
-            addStr = addStr.concat(url.substring(config.baseCrawlUrl.getSourceUrl().toString().length()));
-
-//            System.out.println("here: " + addStr);
+            String addStr = new String(new char[parenturl.fileDepth - 1]).replace("\0", "../");
+//            System.out.println("url: " + url + " modified: " + addStr.concat(Url.filePath.substring(1)));
+//            addStr = addStr.concat(url.substring(config.baseCrawlUrl.getSourceUrl().toString().length()));
+            addStr = addStr.concat(Url.filePath.substring(1));
             return addStr;
         }
         return url;
